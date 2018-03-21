@@ -6,38 +6,72 @@
 #include <chrono>
 #include <thread>
 #include <queue>
+#include <fstream>
 
-
-using namespace std;
-
-bool end_program;
 long long unsigned counter;
-std::queue<std::function<void (unsigned)>> asynchronous_functions;
-unsigned id;
-std::queue<future<void>> promises;
 
-// Encargado de recoger las funciones que deben realizarse y alimentar al dispatcher
-void asynchronous_handler () {
-  while (!end_program) {
-    while (!asynchronous_functions.empty()) {
-      promises.push (std::async(asynchronous_functions.front(), id));
-      asynchronous_functions.pop();
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+class AsyncManager {
+private:
+  std::queue<std::function<void (unsigned)>> asynchronous_functions;
+  unsigned id;
+  std::queue<std::future<void>> asynchronous_promises;
+public:
+  static bool end_program;
+  AsyncManager() {
+    AsyncManager::end_program = false;
   }
-}
 
-// Encargado de realizar las funciones de forma asíncrona
-void asynchronous_dispatcher () {
-  unsigned last_index = 0;
-  while (!end_program) {
-    while (!promises.empty()) {
-      promises.front().get();
-      promises.pop();
+  void execute () {
+    std::vector<std::future<void>> promises (2);
+
+    // Recoge todas las funciones encoladas para ejecutar y alimenta al ejecutador
+    promises[0] = std::async([&]() {
+      while (!end_program) {
+        while (!asynchronous_functions.empty()) {
+          asynchronous_promises.push (std::async(asynchronous_functions.front(), id));
+          asynchronous_functions.pop();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+    });
+
+    // Ejecutador de las funciones encoladas
+    promises[1] = std::async([&](){
+      while (!end_program) {
+        while (!asynchronous_promises.empty()) {
+          asynchronous_promises.front().wait();
+          asynchronous_promises.pop();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+      }
+    });
+
+    for (auto& p : promises) {
+      p.wait();
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-}
+
+  void add_function (std::function<void (unsigned)> function) {
+    id++;
+    asynchronous_functions.push(function);
+  }
+
+  void add_persistent_function (std::function<void (unsigned)> function) {
+    auto persistent = [&](unsigned i) {
+      while (!AsyncManager::end_program) {
+        function (i);
+      }
+    };
+    add_function(persistent);
+  }
+
+  static void end_process () {
+    end_program = true;
+  }
+};
+
+bool AsyncManager::end_program = false;
+AsyncManager manager;
 
 void handle_response_0 (unsigned) {
   std::cout << "\t" << "El contador en segundo plano marca " << counter << "\n" << std::flush;
@@ -66,74 +100,61 @@ void handle_response_3 (unsigned i) {
 }
 
 void handle_response_4 (unsigned) {
-  end_program = true;
+  AsyncManager::end_process();
 }
 
 void master_handler (unsigned option) {
   switch (option) {
     case 0:
-      asynchronous_functions.push(&handle_response_0);
+      manager.add_function(&handle_response_0);
       break;
     case 1:
-      asynchronous_functions.push(&handle_response_1);
+      manager.add_function(&handle_response_1);
       break;
     case 2:
-      asynchronous_functions.push(&handle_response_2);
+      manager.add_function(&handle_response_2);
       break;
     case 3:
-      asynchronous_functions.push(&handle_response_3);
+      manager.add_function(&handle_response_3);
       break;
     case 4:
-      asynchronous_functions.push(&handle_response_4);
+      manager.add_function(&handle_response_4);
       break;
   }
 }
 
-void wait_for_user_input () {
+void wait_for_user_input (unsigned i) {
   unsigned user_input;
-  while (!end_program) {
-    std::cout << "[0] Ver el estado de la operación en segundo plano" << "\n"
-              << "[1] Realizar algoritmo 'costoso', A+B"<< "\n"
-              << "[2] Realizar algoritmo 'costoso', solo B"<< "\n"
-              << "[3] Realizar 10 instancias del algoritmo 'costoso' en paralelo"<< "\n"
-              << "[4] Salir"<< "\n";
-    std::cin >> user_input;
-    master_handler (user_input);
-    id++;
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-  std::cout << "La entrada de usuario ha terminado\n" << std::flush;
+  std::cout << "[0] Ver el estado de la operación en segundo plano" << i << "\n"
+            << "[1] Realizar algoritmo 'costoso', A+B"<< "\n"
+            << "[2] Realizar algoritmo 'costoso', solo B"<< "\n"
+            << "[3] Realizar 10 instancias del algoritmo 'costoso' en paralelo"<< "\n"
+            << "[4] Salir"<< "\n";
+  std::cin >> user_input;
+  master_handler (user_input);
 }
 
-void do_stuff_in_background () {
-  auto f = [&](unsigned i) {
-    while (!end_program) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-      counter++;
-    }
-    std::cout << "La operación en segundo plano ha terminado\n" << std::flush;
-  };
-  asynchronous_functions.push(f);
+void do_stuff_in_background (unsigned i) {
+  counter++;
+}
+
+void generate_logs (unsigned) {
+  std::ofstream outfile;
+  outfile.open("test.txt", std::ios_base::app);
+  outfile << "log : " << counter << "\n";
+  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 }
 
 int main() {
-  end_program = false;
   counter = 0;
-  id = 0;
 
-  std::vector<std::future<void>> promises (3);
-
-  promises[0] = std::async(wait_for_user_input);
-  promises[1] = std::async(asynchronous_dispatcher);
-  promises[2] = std::async(asynchronous_handler);
-
-  do_stuff_in_background();
-
-  for (auto& p : promises) {
-    p.wait();
-  }
+  manager.add_persistent_function(&wait_for_user_input);
+  manager.add_persistent_function(&do_stuff_in_background);
+  manager.add_persistent_function(&generate_logs);
+  manager.execute();
 
   std::cout << "Programa finalizado" << std::endl;
+  return 0;
 }
 
 

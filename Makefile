@@ -1,2 +1,2 @@
 default:
-	g++ -Wall -pthread -o async_javi main.cpp
+	clang++ main.cpp -std=c++11 -pthread -o async_javi
