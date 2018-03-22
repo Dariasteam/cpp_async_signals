@@ -66,32 +66,24 @@ public:
   asyncObject (AsyncManager* const mngr) :
     manager (mngr)
   {}
-  //virtual ~asyncObject() = 0;
+  asyncObject() {};
   void connect (std::function<void (AsyncManager* const)> slot) {
     manager->add_function(slot);
   }
 
 };
 
-class AA : public asyncObject {
+class myObject : public asyncObject {
 public:
-  AA (AsyncManager* const mngr) : asyncObject(mngr) {}
+  myObject (AsyncManager* const mngr) : asyncObject(mngr) {}
 
-  std::function<void (void)> slot_1 = [&]() {
-    std::cout << "He sido llamado 1" << std::endl;
-  };
-
-  std::function<void (int)> slot_2 = [&](int i) {
-    std::cout << "He sido llamado con el número " << i << std::endl;
-  };
-
-  std::function<void (int, int)> slot_3 = [&](int i, int j) {
+// SLOTS -------------------------------------------------
+  void slot (int i, int j) {
     std::cout << "He sido llamado con los números " << i << " " << j << std::endl;
   };
 
-  std::function<void (unsigned, unsigned)> signal_1;
-  std::function<void (unsigned)>           signal_2;
-  std::function<void (unsigned, unsigned)> signal_3;
+// SIGNALS ------------------------------------------------
+  std::function<void (unsigned, unsigned)> signal;
 };
 
 
@@ -179,33 +171,18 @@ void aa (unsigned i, unsigned j) {
 
 int main() {
   AsyncManager manager;
-  counter = 0;
 
-/*
-  auto f3 = std::bind(aa, 95, std::placeholders::_1);
-  f3(8);
-*/
+  myObject a (&manager);
+  myObject b (&manager);
 
-  AA a (&manager);
-  AA b (&manager);
-
-  int m = 2;
-
-
-  a.signal_1 = [&](unsigned i, unsigned j) {
-    a.connect(std::bind (b.slot_3, i, j));
+  a.signal = [&](unsigned i, unsigned j) {
+    a.connect(std::bind (&myObject::slot, b, i, j));
   };
 
-  a.signal_2 = [&](unsigned i) {
-    a.connect(std::bind (b.slot_2, i));
-  };
-
-
-
-  a.signal_1(40, 20);
-  a.signal_2(1290);
-
-
+  a.signal(40, 20);
+  a.signal(40, 9);
+  a.signal(90, 10);
+  a.signal(4, 20);
 
   manager.add_persistent_function(wait_for_user_input);
   manager.add_persistent_function(do_stuff_in_background);
