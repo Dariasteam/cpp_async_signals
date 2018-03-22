@@ -1,2 +1,2 @@
 default:
-	clang++ main.cpp -std=c++11 -pthread -o async_javi
+	clang++ main.cpp -std=c++14 -pthread -o async_javi
