@@ -16,13 +16,6 @@ void do_stuff_in_background (AsyncManager* const manager) {
   std::this_thread::sleep_for(std::chrono::microseconds(10));
 }
 
-void generate_logs (AsyncManager* const manager) {
-  std::ofstream outfile;
-  outfile.open("test.txt", std::ios_base::app);
-  outfile << "log : " << C::counter << "\n";
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-}
-
 int main() {
   AsyncManager manager;
 
@@ -30,7 +23,7 @@ int main() {
   ui.wait_for_user_input();
 
   manager.add_persistent_function(do_stuff_in_background);
-  manager.add_persistent_function(generate_logs);
+  //manager.add_persistent_function(generate_logs);
   manager.execute();
 }
 

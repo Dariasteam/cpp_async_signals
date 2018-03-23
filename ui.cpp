@@ -23,7 +23,8 @@ long long unsigned C::counter = 0;
 UI::UI (AsyncManager* manager) :
   asyncObject(manager),
   a (manager),
-  b (manager)
+  b (manager),
+  lg (manager)
   {
   // CONNECTS --------------------------------------------------------------
   signal_0 = [&]() {
@@ -38,12 +39,18 @@ UI::UI (AsyncManager* manager) :
   signal_3 = [&](unsigned n) {
     send_signal(std::bind(&UI::on_handle_response_3, this, n));
   };
+  start_loggin = [&]() {
+    send_signal(std::bind(&logger::on_start_logging, &lg));
+  };
+  stop_loggin = [&]() {
+    send_signal(std::bind(&logger::on_stop_logging, &lg));
+  };
 }
 
 void UI::wait_for_user_input() {
-  manager->add_function([&](AsyncManager const *){
+  auto func = [&](AsyncManager* const) {
     unsigned user_input = 0;
-    while (user_input != 7) {
+    while (user_input != 9) {
       std::cout << "[0] Ver el estado de la operación en segundo plano" << "\n"
       << "[1] Realizar algoritmo 'costoso' Alg2"<< "\n"
       << "[2] Realizar algoritmo 'costoso', Alg1 + Alg2"<< "\n"
@@ -51,11 +58,14 @@ void UI::wait_for_user_input() {
       << "[4] Conectar con señales los objetos a y b"<< "\n"
       << "[5] Desconectar los objetos a y b"<< "\n"
       << "[6] Emitir la señal en a"<< "\n"
-      << "[7] Salir"<< "\n";
+      << "[7] Comenzar logger"<< "\n"
+      << "[8] Parar logger"<< "\n"
+      << "[9] Salir"<< "\n";
       std::cin >> user_input;
       master_handler (user_input);
     }
-  });
+  };
+  manager->add_function(func);
 }
 
 void UI::master_handler(unsigned option) {
@@ -84,6 +94,12 @@ void UI::master_handler(unsigned option) {
       manager->add_function([&](AsyncManager* const manager) { a.signal(40, 20); });
       break;
     case 7:
+      start_loggin();
+      break;
+    case 8:
+      stop_loggin();
+      break;
+    case 9:
       manager->add_function(std::bind(&AsyncManager::end_process, manager));
       break;
   }

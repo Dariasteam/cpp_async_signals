@@ -30,6 +30,7 @@
 #include <fstream>
 
 #include "lib_asynchronous.hpp"
+#include "logger.h"
 
 struct C {
   static long long unsigned counter;
@@ -56,6 +57,7 @@ class UI : public asyncObject {
 private:
   myObject a;
   myObject b;
+  logger lg;
 public:
   UI (AsyncManager* manager);
 
@@ -73,6 +75,8 @@ private:
   std::function<void (void)> signal_1;
   std::function<void (void)> signal_2;
   std::function<void (unsigned)> signal_3;
+  std::function<void (void)> start_loggin;
+  std::function<void (void)> stop_loggin;
 };
 
 #endif // UI_H
