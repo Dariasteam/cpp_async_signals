@@ -11,20 +11,19 @@
 #include "lib_asynchronous.hpp"
 #include "ui.h"
 
-void do_stuff_in_background (AsyncManager* const manager) {
+void do_stuff_in_background () {
   C::counter++;
-  std::this_thread::sleep_for(std::chrono::microseconds(10));
 }
 
 int main() {
   AsyncManager manager;
 
+  //manager.add_persistent_function(do_stuff_in_background);
+
   UI ui (&manager);
   ui.wait_for_user_input();
 
-  manager.add_persistent_function(do_stuff_in_background);
-  //manager.add_persistent_function(generate_logs);
-  manager.execute();
+  std::cout << "END_PROGRAM" << std::endl;
 }
 
 

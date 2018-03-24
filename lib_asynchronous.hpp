@@ -25,55 +25,46 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include <queue>
 
 class AsyncManager {
 private:
-  std::queue<std::function<void (AsyncManager* const manager)>> asynchronous_functions;
-  std::queue<std::future<void>> asynchronous_promises;
-  bool end_program;
+  bool end_loop;
 public:
-  AsyncManager() : end_program(false) {}
+  AsyncManager() :
+    end_loop(false)
+    {}
 
-  void execute () {
-    // Recoge todas las funciones encoladas para ejecutar y alimenta al ejecutador
-    std::async([&]() {
-      while (!end_program) {
-        while (!asynchronous_functions.empty()) {
-          asynchronous_promises.push (std::async(asynchronous_functions.front(), this));
-          asynchronous_functions.pop();
-        }
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
-      }
-    });
-    // Ejecutador de las funciones encoladas
-    std::async([&]() {
-      while (!end_program) {
-        while (!asynchronous_promises.empty()) {
-          asynchronous_promises.pop();
-        }
-      }
-    });
+  void add_function (std::function<void (void)> function) {
+    std::thread t (function);
+    t.detach();
   }
 
-  void add_function (std::function<void (AsyncManager* const manager)> function) {
-    asynchronous_functions.push(function);
+  void add_function (std::function<void (AsyncManager* const)> function) {
+    std::thread t (function, this);
+    t.detach();
   }
 
-  void add_persistent_function (std::function<void (AsyncManager* const manager)> function) {
-    auto persistent = [&](AsyncManager* const manager) {
-      while (!AsyncManager::end_program) {
-        function (manager);
-      }
+  void add_persistent_function (std::function<void (AsyncManager* const)> function) {
+    auto persistent = [&](void) {
+      while (!end_loop)
+        function (this);
+    };
+    add_function(persistent);
+  }
+
+  void add_persistent_function (std::function<void (void)> function) {
+    auto persistent = [&](void) {
+      while (!end_loop)
+        function ();
     };
     add_function(persistent);
   }
 
   void end_process () {
-    end_program = true;
+    end_loop = true;
   }
 
-  bool is_alive () const { return !end_program; }
+  bool is_alive () const { return !end_loop; }
 };
 
 class asyncObject {
@@ -83,7 +74,7 @@ public:
   asyncObject (AsyncManager* const mngr) :
     manager (mngr)
     {}
-  void send_signal (std::function<void (AsyncManager* const)> slot) {
+  void send_signal (std::function<void (void)> slot) {
     manager->add_function(slot);
   }
 };

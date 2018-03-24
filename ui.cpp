@@ -48,24 +48,21 @@ UI::UI (AsyncManager* manager) :
 }
 
 void UI::wait_for_user_input() {
-  auto func = [&](AsyncManager* const) {
-    unsigned user_input = 0;
-    while (user_input != 9) {
-      std::cout << "[0] Ver el estado de la operación en segundo plano" << "\n"
-      << "[1] Realizar algoritmo 'costoso' Alg2"<< "\n"
-      << "[2] Realizar algoritmo 'costoso', Alg1 + Alg2"<< "\n"
-      << "[3] Realizar 10 instancias del algoritmo 'costoso' en paralelo"<< "\n"
-      << "[4] Conectar con señales los objetos a y b"<< "\n"
-      << "[5] Desconectar los objetos a y b"<< "\n"
-      << "[6] Emitir la señal en a"<< "\n"
-      << "[7] Comenzar logger"<< "\n"
-      << "[8] Parar logger"<< "\n"
-      << "[9] Salir"<< "\n";
-      std::cin >> user_input;
-      master_handler (user_input);
-    }
-  };
-  manager->add_function(func);
+  unsigned user_input = 0;
+  while (user_input != 9) {
+    std::cout << "[0] Ver el estado de la operación en segundo plano" << "\n"
+    << "[1] Realizar algoritmo 'costoso' Alg2"<< "\n"
+    << "[2] Realizar algoritmo 'costoso', Alg1 + Alg2"<< "\n"
+    << "[3] Realizar 10 instancias del algoritmo 'costoso' en paralelo"<< "\n"
+    << "[4] Conectar con señales los objetos a y b"<< "\n"
+    << "[5] Desconectar los objetos a y b"<< "\n"
+    << "[6] Emitir la señal en a"<< "\n"
+    << "[7] Comenzar logger"<< "\n"
+    << "[8] Parar logger"<< "\n"
+    << "[9] Salir"<< "\n";
+    std::cin >> user_input;
+    master_handler (user_input);
+  }
 }
 
 void UI::master_handler(unsigned option) {
@@ -100,25 +97,25 @@ void UI::master_handler(unsigned option) {
       stop_loggin();
       break;
     case 9:
-      manager->add_function(std::bind(&AsyncManager::end_process, manager));
+      manager->add_function(&AsyncManager::end_process);
       break;
   }
 }
 
 void UI::on_handle_response_0() {
-  std::cout << "\t" << "El contador en segundo plano marca " << C::counter << "\n" << std::flush;
+  std::cout << "\tEl contador en segundo plano marca " << C::counter << "\n" << std::flush;
 }
 
 void UI::on_handle_response_1() {
-  std::cout << "\t" << "Comenzando B " << "\n" << std::flush;
+  std::cout <<  "\tComenzando B " << "\n" << std::flush;
   std::this_thread::sleep_for(std::chrono::seconds(3));
-  std::cout << "\t" << "B finalizado " << "\n" << std::flush;
+  std::cout <<  "\tB finalizado " << "\n" << std::flush;
 }
 
 void UI::on_handle_response_2() {
-  std::cout << "\t" << "Comenzando A " << "\n" << std::flush;
+  std::cout <<  "\tComenzando A " << "\n" << std::flush;
   std::this_thread::sleep_for(std::chrono::seconds(3));
-  std::cout << "\t" << "A finalizado " << "\n" << std::flush;
+  std::cout <<  "\tA finalizado " << "\n" << std::flush;
   on_handle_response_1();
 }
 
