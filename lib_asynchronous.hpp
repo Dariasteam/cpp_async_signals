@@ -25,46 +25,69 @@
 #include <string>
 #include <chrono>
 #include <thread>
+#include <atomic>
+#include <condition_variable>
 
 class AsyncManager {
 private:
-  bool end_loop;
+  std::atomic<bool> end_loop;
+  long long n_threads;
+  std::mutex m;
+  std::condition_variable cv;
+
 public:
   AsyncManager() :
-    end_loop(false)
-    {}
+    n_threads(0)
+    {
+      end_loop.store(false);
+    }
+
+  ~AsyncManager() {
+    end_safe();
+  }
+
+  void start() {
+    std::unique_lock<std::mutex> lk(m);
+    cv.wait(lk, [&]{return !is_alive();});
+  }
 
   void add_function (std::function<void (void)> function) {
-    std::thread t (function);
+    auto ff = [&, function]() {
+      function();
+      --n_threads;
+    };
+    ++n_threads;
+    std::thread t (ff);
     t.detach();
   }
 
-  void add_function (std::function<void (AsyncManager* const)> function) {
-    std::thread t (function, this);
+  void add_persistent_function (std::function<bool (void)> function) {
+    auto persistent = [&, function](void) {
+      while (is_alive() && function ());
+      --n_threads;
+    };
+    ++n_threads;
+    std::thread t (persistent);
     t.detach();
   }
 
-  void add_persistent_function (std::function<void (AsyncManager* const)> function) {
-    auto persistent = [&](void) {
-      while (!end_loop)
-        function (this);
-    };
-    add_function(persistent);
+  bool end_safe () {
+    end_loop.store(true);
+    cv.notify_one();
+    std::cerr << "Waiting for threads to finish " << n_threads << std::endl;
+    while (n_threads > 1) {
+      std::this_thread::sleep_for(std::chrono::nanoseconds(3));
+    }
+    std::cerr << "Threads closed" << std::endl;
+    return true;
   }
 
-  void add_persistent_function (std::function<void (void)> function) {
-    auto persistent = [&](void) {
-      while (!end_loop)
-        function ();
-    };
-    add_function(persistent);
+  void end_unsafe () {
+    end_loop.store(true);
+    cv.notify_one();
   }
 
-  void end_process () {
-    end_loop = true;
-  }
-
-  bool is_alive () const { return !end_loop; }
+  bool is_alive () const { return !end_loop.load(); }
 };
 
 class asyncObject {

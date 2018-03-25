@@ -61,8 +61,8 @@ private:
 public:
   UI (AsyncManager* manager);
 
-  void wait_for_user_input ();
-  void master_handler (unsigned option);
+  bool wait_for_user_input (void);
+  bool master_handler (unsigned option);
 
 private:
   // SLOTS ---------------------------------------------------------------------

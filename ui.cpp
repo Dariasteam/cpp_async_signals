@@ -26,7 +26,7 @@ UI::UI (AsyncManager* manager) :
   b (manager),
   lg (manager)
   {
-  // CONNECTS --------------------------------------------------------------
+  // CONNECTS ------------------------------------------------------------------
   signal_0 = [&]() {
     send_signal(std::bind(&UI::on_handle_response_0, this));
   };
@@ -45,27 +45,27 @@ UI::UI (AsyncManager* manager) :
   stop_loggin = [&]() {
     send_signal(std::bind(&logger::on_stop_logging, &lg));
   };
+  // ENTRY POINT ---------------------------------------------------------------
+  manager->add_persistent_function(std::bind(&UI::wait_for_user_input, this));
 }
 
-void UI::wait_for_user_input() {
+bool UI::wait_for_user_input() {
   unsigned user_input = 0;
-  while (user_input != 9) {
-    std::cout << "[0] Ver el estado de la operación en segundo plano" << "\n"
-    << "[1] Realizar algoritmo 'costoso' Alg2"<< "\n"
-    << "[2] Realizar algoritmo 'costoso', Alg1 + Alg2"<< "\n"
-    << "[3] Realizar 10 instancias del algoritmo 'costoso' en paralelo"<< "\n"
-    << "[4] Conectar con señales los objetos a y b"<< "\n"
-    << "[5] Desconectar los objetos a y b"<< "\n"
-    << "[6] Emitir la señal en a"<< "\n"
-    << "[7] Comenzar logger"<< "\n"
-    << "[8] Parar logger"<< "\n"
-    << "[9] Salir"<< "\n";
-    std::cin >> user_input;
-    master_handler (user_input);
-  }
+  std::cout << "[0] Ver el estado de la operación en segundo plano" << "\n"
+  << "[1] Realizar algoritmo 'costoso' Alg2"<< "\n"
+  << "[2] Realizar algoritmo 'costoso', Alg1 + Alg2"<< "\n"
+  << "[3] Realizar 10 instancias del algoritmo 'costoso' en paralelo"<< "\n"
+  << "[4] Conectar con señales los objetos a y b"<< "\n"
+  << "[5] Desconectar los objetos a y b"<< "\n"
+  << "[6] Emitir la señal en a"<< "\n"
+  << "[7] Comenzar logger"<< "\n"
+  << "[8] Parar logger"<< "\n"
+  << "[9] Salir"<< "\n";
+  std::cin >> user_input;
+  return master_handler (user_input);
 }
 
-void UI::master_handler(unsigned option) {
+bool UI::master_handler(unsigned option) {
   switch (option) {
     case 0:
       signal_0();
@@ -88,7 +88,7 @@ void UI::master_handler(unsigned option) {
       a.signal = [&](unsigned i, unsigned j) {};
       break;
     case 6:
-      manager->add_function([&](AsyncManager* const manager) { a.signal(40, 20); });
+      a.signal(40, 20);
       break;
     case 7:
       start_loggin();
@@ -97,9 +97,11 @@ void UI::master_handler(unsigned option) {
       stop_loggin();
       break;
     case 9:
-      manager->add_function(&AsyncManager::end_process);
+      manager->end_safe();
+      return false;
       break;
   }
+  return true;
 }
 
 void UI::on_handle_response_0() {
