@@ -31,15 +31,15 @@ Name=Nuevo lanzador de Binario compilado
 Type=Native Application
 
 [Launch][Launch Configuration 0][Data]
-Arguments=
+Arguments=async_demo
 Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
 Dependency Action=Nothing
 EnvironmentGroup=
-Executable=file:///home/darias/projects/async_javi/async_javi
+Executable=file:///home/darias/Desarrollo/AsynchronousC++/async_demo
 External Terminal=konsole --noclose --workdir %workdir -e %exe
 Project Target=
 Use External Terminal=true
-Working Directory=
+Working Directory=file:///home/darias/Desarrollo/AsynchronousC++
 isExecutable=true
 
 [Project]

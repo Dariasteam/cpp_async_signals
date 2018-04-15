@@ -20,35 +20,28 @@
 #define UI_H
 
 #include <iostream>
-#include <future>
 #include <functional>
+#include <future>
 #include <vector>
-#include <string>
 #include <chrono>
-#include <thread>
-#include <queue>
 #include <fstream>
+#include <cmath>
 
 #include "lib_asynchronous.hpp"
 #include "logger.h"
-
-struct C {
-  static long long unsigned counter;
-};
 
 class myObject : public asyncObject {
 private:
   std::string name;
 public:
-  myObject (AsyncManager* const mngr) :
+  myObject (asyncManager* const mngr) :
     asyncObject(mngr)
     {}
   // SLOTS ---------------------------------------------------------------------
   void slot (int i, int j);
   // SIGNALS -------------------------------------------------------------------
-  std::function<void (unsigned, unsigned)> signal;
+  std::function<void (unsigned, unsigned)> signal = [](unsigned, unsigned){};
 };
-
 
 /**
  * @todo write docs
@@ -59,24 +52,24 @@ private:
   myObject b;
   logger lg;
 public:
-  UI (AsyncManager* manager);
+  UI (asyncManager* manager);
 
   bool wait_for_user_input (void);
   bool master_handler (unsigned option);
 
 private:
   // SLOTS ---------------------------------------------------------------------
-  void on_handle_response_0 ();
   void on_handle_response_1 ();
   void on_handle_response_2 ();
   void on_handle_response_3 (unsigned n);
   // SIGNALS -------------------------------------------------------------------
-  std::function<void (void)> signal_0;
-  std::function<void (void)> signal_1;
-  std::function<void (void)> signal_2;
-  std::function<void (unsigned)> signal_3;
-  std::function<void (void)> start_loggin;
-  std::function<void (void)> stop_loggin;
+  std::function<void (void)> signal_1 = []{};
+  std::function<void (void)> signal_2 = []{};
+  std::function<void (unsigned)> signal_3 = [](unsigned){};
+  std::function<void (void)> signal_start_loggin = []{};
+  std::function<void (void)> signal_stop_loggin = [&] {
+    send_signal(std::bind(&logger::on_stop_logging, &lg));
+  };
 };
 
 #endif // UI_H

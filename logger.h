@@ -31,7 +31,7 @@ class logger : public asyncObject {
 private:
   bool log;
 public:
-  logger (AsyncManager* const manager);
+  logger (asyncManager* const manager);
   void on_start_logging ();
   void on_stop_logging ();
 };

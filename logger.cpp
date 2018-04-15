@@ -18,7 +18,7 @@
 
 #include "logger.h"
 
-logger::logger (AsyncManager* const manager) :
+logger::logger (asyncManager* const manager) :
   asyncObject(manager),
   log (false)
   {}

@@ -19,16 +19,14 @@
 #ifndef LIB_ASYNC_H
 #define LIB_ASYNC_H
 
-#include <future>
 #include <functional>
-#include <vector>
-#include <string>
-#include <chrono>
 #include <thread>
 #include <atomic>
 #include <condition_variable>
 
-class AsyncManager {
+#define VERBOSE
+
+class asyncManager {
 private:
   std::atomic<bool> end_loop;
   long long n_threads;
@@ -36,13 +34,13 @@ private:
   std::condition_variable cv;
 
 public:
-  AsyncManager() :
+  asyncManager() :
     n_threads(0)
     {
       end_loop.store(false);
     }
 
-  ~AsyncManager() {
+  ~asyncManager() {
     end_safe();
   }
 
@@ -72,19 +70,28 @@ public:
   }
 
   bool end_safe () {
-    end_loop.store(true);
-    cv.notify_one();
-    std::cerr << "Waiting for threads to finish " << n_threads << std::endl;
-    while (n_threads > 1) {
-      std::this_thread::sleep_for(std::chrono::nanoseconds(3));
+    if (!end_loop.load()) {
+      end_loop.store(true);
+      #ifdef VERBOSE
+      std::cerr << "Waiting for threads to finish " << n_threads << std::endl;
+      #endif
+      while (n_threads > 1) {
+        std::this_thread::sleep_for(std::chrono::nanoseconds(3));
+      }
+      #ifdef VERBOSE
+      std::cerr << "All threads finished" << std::endl;
+      #endif
+      cv.notify_one();
+      return true;
     }
-    std::cerr << "Threads closed" << std::endl;
     return true;
   }
 
   void end_unsafe () {
-    end_loop.store(true);
-    cv.notify_one();
+    if (!end_loop.load()) {
+      end_loop.store(true);
+      cv.notify_one();
+  }
   }
 
   bool is_alive () const { return !end_loop.load(); }
@@ -92,9 +99,9 @@ public:
 
 class asyncObject {
 protected:
-  AsyncManager* manager;
+  asyncManager* manager;
 public:
-  asyncObject (AsyncManager* const mngr) :
+  asyncObject (asyncManager* const mngr) :
     manager (mngr)
     {}
   void send_signal (std::function<void (void)> slot) {
