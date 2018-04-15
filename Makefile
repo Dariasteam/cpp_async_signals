@@ -1,4 +1,4 @@
-CC=g++
+CC=clang++
 CXXFLAGS= -std=c++11 -pthread -O3
 
 OBJS = logger.cpp ui.cpp main.cpp
