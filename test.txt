@@ -1,8 +1,0 @@
-log : log writen
-log : log writen
-log : log writen
-log : log writen
-log : log writen
-log : log writen
-log : log writen
-> stop log
